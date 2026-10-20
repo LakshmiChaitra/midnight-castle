@@ -1,0 +1,12 @@
+{
+  "name": "midnight-castle",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test tests/startup.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.11"
+  },
+  "type": "module"
+}

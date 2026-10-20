@@ -1,3 +1,4 @@
+import {loadProgress,saveProgress} from './progress-storage.js';
 export function createLetters(onReward = () => {}, onActivity = () => {}) {
 const $ = id => document.getElementById(id), KEY = 'nameless-keep-v2';
 const letters = [
@@ -17,15 +18,14 @@ const rewards = [
  {id:'stars',cost:50,icon:'☄',name:'A sky full of wishes',description:'Wake a real shower of falling stars over the courtyard. Yours to call again.'},
  {id:'roof',cost:90,icon:'☾',name:'The door above the stars',description:'Raise the sealed gate beyond the tree. Walk up to the hidden Moon Terrace.'}
 ];
-let saved = {};
-for (const storage of [localStorage,sessionStorage]) {try {const next=JSON.parse(storage.getItem(KEY)||'{}');if((next?.at||0)>(saved.at||0))saved=next;}catch{}}
+const saved=loadProgress(KEY);
 const norm=s=>s.trim().toLowerCase().replace(/\s+/g,' ');
 const state={read:Array.isArray(saved.read)?[...new Set(saved.read.filter(n=>Number.isInteger(n)&&n>=0&&n<letters.length))]:[],written:Array.isArray(saved.written)?saved.written.filter(s=>typeof s==='string'&&s.length>=24&&s.length<=500).filter((s,i,a)=>a.findIndex(t=>norm(t)===norm(s))===i).slice(0,100):[],rewards:[]};
 const earned=()=>state.read.length*5+state.written.length*20;
 let available=earned();for(const id of Array.isArray(saved.rewards)?[...new Set(saved.rewards)]:[]){const r=rewards.find(x=>x.id===id);if(r&&available>=r.cost){state.rewards.push(id);available-=r.cost;}}
 const has=id=>state.rewards.includes(id), balance=()=>earned()-rewards.filter(r=>has(r.id)).reduce((v,r)=>v+r.cost,0);
 let selected=-1,previous=-1,timer;
-function save(){const value=JSON.stringify({...state,at:Date.now()});let success=false;for(const storage of [localStorage,sessionStorage]){try{storage.setItem(KEY,value);success=true;}catch{}}if(!success)toast('Saving is unavailable. You can still wander this session.');}
+function save(){if(!saveProgress(KEY,{...state,at:Date.now()}))toast('Saving is unavailable. You can still wander this session.');}
 function render(){ $('balance').textContent=balance();$('reward-balance').textContent=balance();$('journal-count').textContent=String(state.read.length+state.written.length).padStart(2,'0'); }
 function toast(text){$('world-toast').textContent=text;$('world-toast').classList.add('visible');clearTimeout(timer);timer=setTimeout(()=>$('world-toast').classList.remove('visible'),4500);}
 function modal(id){if(document.pointerLockElement)document.exitPointerLock();document.querySelectorAll('dialog[open]').forEach(d=>d.close());document.dispatchEvent(new Event('keep:pause'));$(id).showModal();}

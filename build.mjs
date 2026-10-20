@@ -1,0 +1,16 @@
+import {build} from 'esbuild';
+import {readFile,writeFile,readdir,unlink} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import path from 'node:path';
+const result=await build({entryPoints:['exploration.js'],bundle:true,write:false,format:'iife',target:'es2019',minify:true,legalComments:'inline',alias:{'three/addons':path.resolve('vendor/package/examples/jsm'),'three':path.resolve('vendor/package/build/three.module.js')}});
+const code=result.outputFiles[0].contents,hash=createHash('sha256').update(code).update(await readFile('boot.js'));
+for(const f of (await readdir('.')).filter(f=>f.endsWith('.css')).sort())hash.update(await readFile(f));
+const id=hash.digest('hex').slice(0,12),name=`game.${id}.js`;
+await writeFile(name,code);
+let html=await readFile('index.html','utf8');
+const tag=`<script id="castle-boot" defer src="boot.js?v=${id}" data-engine="${name}"></script>`;
+html=html.replace(/<script type="importmap">[\s\S]*?<\/script><script type="module" src="exploration.js"><\/script>/,tag).replace(/<script id="castle-boot"[^>]*><\/script>/,tag);
+html=html.replace(/href="([^"?]+\.css)(?:\?v=[^"]*)?"/g,(_,file)=>`href="${file}?v=${id}"`);
+await writeFile('index.html',html);
+for(const f of await readdir('.'))if(/^game\.[a-f0-9]{12}\.js$/.test(f)&&f!==name)await unlink(f);
+console.log(`Built ${name} (${Math.round(code.length/1024)} KiB), no import map or runtime module downloads.`);

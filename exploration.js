@@ -10,14 +10,18 @@ import {createExpedition} from './exploration-expedition.js';
 import {createRealms} from './realms.js';
 import {createSoundscape} from './soundscape.js';
 import {createDemo} from './demo.js';
+import {createGameRenderer} from './renderer-startup.js';
 
 const $=id=>document.getElementById(id), host=$('world'), reduced=matchMedia('(prefers-reduced-motion: reduce)');
-let renderer;
-try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});}catch(error){$('begin').textContent='3D GRAPHICS UNAVAILABLE';$('start-guidance')?.remove();const p=document.createElement('p');p.textContent='This browser could not start WebGL. Open this game in a browser with hardware acceleration enabled.';$('title-screen').append(p);throw error;}
-renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.98;renderer.setClearColor(0x111c22);host.append(renderer.domElement);renderer.domElement.setAttribute('aria-label','3D castle world. Drag to look. Use W A S D or the movement controls to walk.');
+let {renderer,lightweight:lite}=createGameRenderer(THREE,new URLSearchParams(location.search).get('graphics')==='lite');
+let firstRendered=false,graphicsFailed=false,animationFrame=0;
+renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();firstRendered=false;graphicsFailed=true;cancelAnimationFrame(animationFrame);window.dispatchEvent(new CustomEvent('castle:error',{detail:{message:'The browser lost its 3D graphics context.'}}));});
+renderer.domElement.addEventListener('webglcontextrestored',()=>{graphicsFailed=false;animate();});
+renderer.debug.onShaderError=()=>{graphicsFailed=true;cancelAnimationFrame(animationFrame);throw new Error('The graphics shader could not compile on this device. Try lightweight graphics.');};
+renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(lite?1:Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=!lite;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.98;renderer.setClearColor(0x111c22);host.append(renderer.domElement);renderer.domElement.setAttribute('aria-label','3D castle world. Drag to look. Use W A S D or the movement controls to walk.');
 const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x17252c,.024);
 const camera=new THREE.PerspectiveCamera(64,innerWidth/innerHeight,.08,400);camera.rotation.order='YXZ';camera.position.set(0,1.75,18);scene.add(camera);
-const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.48,.7,1.25);composer.addPass(bloom);composer.addPass(new OutputPass());
+const composer=lite?{addPass(){},setSize(){},render(){renderer.render(scene,camera);}}:new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));const bloom=lite?{enabled:false,resolution:new THREE.Vector2()}:new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.48,.7,1.25);composer.addPass(bloom);composer.addPass(new OutputPass());
 const clock=new THREE.Clock(),keys=new Set(),obstacles=[],interactables=[],flames=[],torches=[],floating=[],mistPlanes=[];
 let routeFocus=null,autoPath=[],entrancePhoto=null,queuedArchive=false;
 let entered=false,yaw=0,pitch=0,velocity=new THREE.Vector3(),vertical=0,grounded=true,stamina=1,stepPhase=0,activeObject=null,dragging=false,dragged=false,lastPointer={x:0,y:0},sensitivity=.004,walkingTarget=0,turnTarget=0,activeStep='',stepStarted=0,gateLift=0,region='',frame=0,quality='cinematic',time=0;
@@ -72,7 +76,7 @@ desk(-7,-9,.2);desk(7,-18,-.2);
 for(const side of [-1,1])for(let z=-19;z>-29;z-=9){box(1.3,4.4,4,wood,side*12,2.2,z);coll(side*12,z,1.4,4);for(let y=.7;y<4;y+=.8){box(1.5,.1,4.2,bronze,side*12,y,z);for(let i=0;i<10;i++){box(.6,rand(.35,.65),.2,bookMaterials[(Math.random()*bookMaterials.length)|0],side*11.8,y+.3,z-1.8+i*.37);}}}
 // Garden fountain and a reflective, shallow moon pool.
 const poolBase=cylinder(4.6,4.8,.3,darkStone,0,.05,-27,scene,64);const rim=new THREE.Mesh(new THREE.TorusGeometry(4.65,.12,8,96),paleStone);rim.rotation.x=Math.PI/2;rim.position.set(0,.2,-27);scene.add(rim);
-const water=new Reflector(new THREE.CircleGeometry(4.5,64),{color:0x536558,textureWidth:512,textureHeight:512,clipBias:.003});water.rotation.x=-Math.PI/2;water.position.set(0,.22,-27);scene.add(water);
+const water=new Reflector(new THREE.CircleGeometry(4.5,64),{color:0x536558,textureWidth:512,textureHeight:512,clipBias:.003});water.rotation.x=-Math.PI/2;water.position.set(0,.22,-27);scene.add(water);water.visible=!lite;
 // The wishing tree is modeled branch by branch, with instanced luminous leaves.
 const branchGeometries=[],leafMatrices=[],leafObject=new THREE.Object3D();
 function branch(start,end,r,depth){const mid=start.clone().lerp(end,.5).add(new THREE.Vector3(rand(-r,r),0,rand(-r,r)));const curve=new THREE.CatmullRomCurve3([start,mid,end]);const geo=new THREE.TubeGeometry(curve,7,r,6,false);branchGeometries.push(geo);if(depth===0){for(let n=0;n<17;n++){leafObject.position.copy(end).add(new THREE.Vector3(rand(-1.4,1.4),rand(-.4,1.2),rand(-1.4,1.4)));leafObject.rotation.set(rand(0,3),rand(0,6),rand(0,3));leafObject.scale.set(rand(.08,.18),rand(.2,.5),rand(.04,.09));leafObject.updateMatrix();leafMatrices.push(leafObject.matrix.clone());}return;}const direction=end.clone().sub(start);for(let i=0;i<3;i++){const a=rand(0,Math.PI*2);const length=direction.length()*.68;const to=end.clone().add(new THREE.Vector3(Math.cos(a)*length*.67,length*rand(.5,.85),Math.sin(a)*length*.67));branch(end,to,r*.58,depth-1);}}
@@ -139,8 +143,9 @@ $('fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenEle
 document.addEventListener('fullscreenchange',()=>$('fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit full screen':'Enter full screen'));
 $('lock-look').addEventListener('click',async()=>{$('settings-dialog').close();try{await renderer.domElement.requestPointerLock();}catch{ui.toast('Drag the world to look around.');}});
 $('sensitivity').addEventListener('change',()=>sensitivity=Number($('sensitivity').value));
-$('quality').addEventListener('change',()=>{quality=$('quality').value;renderer.setPixelRatio(Math.min(devicePixelRatio,quality==='cinematic'?1.5:1));bloom.enabled=quality==='cinematic';water.visible=quality==='cinematic';renderer.shadowMap.enabled=quality==='cinematic';resize();});
+$('quality').addEventListener('change',()=>{if($('quality').value==='lite'||(lite&&$('quality').value==='cinematic')){const u=new URL(location.href);if($('quality').value==='lite')u.searchParams.set('graphics','lite');else u.searchParams.delete('graphics');location.assign(u.href);return;}if(lite){$('quality').value='lite';return;}quality=$('quality').value;renderer.setPixelRatio(Math.min(devicePixelRatio,quality==='cinematic'?1.5:1));bloom.enabled=quality==='cinematic';water.visible=quality==='cinematic';renderer.shadowMap.enabled=quality==='cinematic';resize();});
 function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);}window.addEventListener('resize',resize);
+const liteLights=[];if(lite){$('quality').value='lite';scene.updateMatrixWorld(true);scene.traverse(o=>{if(o.isPointLight&&o!==handlight)liteLights.push({light:o,position:o.getWorldPosition(new THREE.Vector3())});});}
 // Bake static meshes by material to reduce draw calls without flattening the world.
 scene.updateMatrixWorld(true);
 const batches=new Map();
@@ -185,7 +190,7 @@ demo=createDemo({
  telemetry(chapter,elapsed){renderer.domElement.dataset.demo='playing';renderer.domElement.dataset.demoChapter=String(chapter+1);renderer.domElement.dataset.demoTime=elapsed.toFixed(1);}
 });
 let adapted=false,slowFrames=0;
-function animate(){requestAnimationFrame(animate);const rawDt=Math.min(clock.getDelta(),.045),dt=demo?.paused?0:rawDt;time+=dt;frame++;demo?.update(dt,time);const paused=Boolean(document.querySelector('dialog[open]'))||Boolean(demo?.paused);if(archiveRoom.active){adventure.update({time,dt,yaw,paused,inside:true});archiveRoom.update(dt,time);renderer.domElement.dataset.frame=frame;return;}if(entered&&!paused){let moveX=0,moveZ=0;
+function animate(){if(graphicsFailed)return;animationFrame=requestAnimationFrame(animate);const rawDt=Math.min(clock.getDelta(),.045),dt=demo?.paused?0:rawDt;time+=dt;frame++;demo?.update(dt,time);const paused=Boolean(document.querySelector('dialog[open]'))||Boolean(demo?.paused);if(archiveRoom.active){adventure.update({time,dt,yaw,paused,inside:true});archiveRoom.update(dt,time);renderer.domElement.dataset.frame=frame;return;}if(entered&&!paused){let moveX=0,moveZ=0;
  if(keys.size||activeStep)autoPath=[];
  if(autoPath.length){const target=autoPath[0],dx=target.x-player.x,dz=target.z-player.z,dist=Math.hypot(dx,dz);if(dist<.15){autoPath.shift();if(!autoPath.length&&routeFocus)yaw=Math.atan2(player.x-routeFocus[0],player.z-routeFocus[1]);}else{const desired=Math.atan2(-dx,-dz);yaw+=Math.atan2(Math.sin(desired-yaw),Math.cos(desired-yaw))*(1-Math.exp(-4*dt));const length=Math.min(dist,dt*guideSpeed);tryMove(dx/dist*length,dz/dist*length);pitch=THREE.MathUtils.damp(pitch,-.02,3,dt);}}
  if(keys.has('KeyW')||keys.has('ArrowUp')||activeStep==='forward')moveZ+=1;if(keys.has('KeyS')||keys.has('ArrowDown')||activeStep==='back')moveZ-=1;if(keys.has('KeyA'))moveX-=1;if(keys.has('KeyD'))moveX+=1;if(keys.has('ArrowLeft')||activeStep==='left')yaw+=dt*1.6;if(keys.has('ArrowRight')||activeStep==='right')yaw-=dt*1.6;
@@ -206,7 +211,8 @@ function animate(){requestAnimationFrame(animate);const rawDt=Math.min(clock.get
  if(frame%15===0){renderer.domElement.dataset.playerX=player.x.toFixed(2);renderer.domElement.dataset.playerY=player.y.toFixed(2);renderer.domElement.dataset.traveler=adventure.state.traveler;renderer.domElement.dataset.mode=adventure.state.mode;renderer.domElement.dataset.playerZ=player.z.toFixed(2);renderer.domElement.dataset.heading=yaw.toFixed(2);renderer.domElement.dataset.route=JSON.stringify(autoPath[0]||null);renderer.domElement.dataset.frame=frame;}
  adventure.update({time,dt,yaw,paused,inside:adventure.state.follow});
  realms.update(dt,time);soundscape.update(dt,time,player.distanceTo(lastSoundPosition)/Math.max(.001,dt),realms.location(),paused);lastSoundPosition.copy(player);renderer.domElement.dataset.room=realms.location();renderer.domElement.dataset.openDrawers=String(realms.drawers.filter(d=>d.open>.5).length);$('realm-title').textContent=realms.location();$('realm-compass').textContent=player.x<-15?'WEST WING · ASH & PAPER':player.x>15?'EAST WING · SNOW & STARS':player.z>26?'SOUTH WING · GLASS & ROOTS':'CENTRAL KEEP · RAIN & STONE';$('region-name').textContent=realms.location();
- updateEntrance();composer.render();
+ if(lite&&frame%15===1){const closest=[...liteLights].sort((a,b)=>a.position.distanceToSquared(player)-b.position.distanceToSquared(player)).slice(0,6);for(const item of liteLights)item.light.visible=closest.includes(item);}
+ updateEntrance();composer.render();if(!firstRendered){firstRendered=true;window.dispatchEvent(new Event('castle:ready'));}
  if(!adapted&&frame<100&&dt>.04)slowFrames++;if(!adapted&&frame===100&&slowFrames>45){adapted=true;renderer.setPixelRatio(1);bloom.resolution.set(innerWidth*.65,innerHeight*.65);composer.setSize(innerWidth,innerHeight);}
 }
 $('begin').disabled=false;$('begin').textContent='ENTER THE KEEP';$('loading-line').hidden=true;$('game').classList.add('realm-game');$('begin').click();animate();
