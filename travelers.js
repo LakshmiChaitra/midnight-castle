@@ -61,9 +61,10 @@ export function buildTraveler(id){
   else{const curve=new THREE.CatmullRomCurve3([new THREE.Vector3(),new THREE.Vector3(0,.13,.23),new THREE.Vector3(0,.42,.37),new THREE.Vector3(0,.5,.23)]);mesh(new THREE.TubeGeometry(curve,16,spec.type==='dog'?.065:.04,8,false),coat,tail);}
   rig.tail=tail;const collar=mesh(new THREE.TorusGeometry(.185,.035,6,24),accent,root,0,.68,-.33);collar.rotation.x=Math.PI/2;mesh(new THREE.OctahedronGeometry(.055),material(0xe0bc76,.4),root,0,.57,-.45);
  }
+ let gait=0;
  rig.animate=(time,speed,dt,action=false)=>{
   if(rig.cape)rig.cape.rotation.z=Math.sin(time*2.3)*.018;
-  const gait=time*(speed>3?11:7),amount=Math.min(1,speed/2.4);
+  gait+=Math.max(0,speed)*dt*2.7;const amount=Math.min(1,speed/2.4);
   root.position.y=Math.sin(time*2)*.012+(spec.type==='girl'||spec.type==='boy'?0:Math.abs(Math.sin(gait))*.018*amount);
   rig.legs.forEach((leg,i)=>leg.rotation.x=Math.sin(gait+(spec.type==='girl'||spec.type==='boy'?i*Math.PI:(i===0||i===3?0:Math.PI)))*.55*amount);
   rig.arms.forEach((arm,i)=>{arm.rotation.x=-Math.sin(gait+i*Math.PI)*.4*amount;arm.rotation.z=(i===0?.05:-.05);});
