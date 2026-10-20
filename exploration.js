@@ -184,6 +184,7 @@ function walkInside(){if(player.z>4)queuedArchive=false;if(player.y>2&&player.x>
 $('home-door').addEventListener('click',walkInside);$('walk-inside').addEventListener('click',walkInside);
 $('walk-home').addEventListener('click',()=>navigateTo('home'));
 $('home-guide').addEventListener('click',()=>ui.modal('destination-dialog'));
+$('open-about').addEventListener('click',()=>ui.modal('about-dialog'));
 new THREE.TextureLoader().load('assets/stone.jpg',tex=>{tex.colorSpace=THREE.SRGBColorSpace;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.anisotropy=renderer.capabilities.getMaxAnisotropy();for(const mat of [stone,darkStone,paleStone]){mat.map=tex;mat.bumpMap=tex;mat.bumpScale=.16;mat.needsUpdate=true;}const floor=tex.clone();floor.needsUpdate=true;floor.repeat.set(2,4);floorMat.map=floor;floorMat.bumpMap=floor;floorMat.bumpScale=.1;floorMat.needsUpdate=true;});
 
 demo=createDemo({
