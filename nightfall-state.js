@@ -1,3 +1,4 @@
+import {weaponFor} from './nightfall-combat.js';
 export const NIGHTS=[
  {title:'The first stolen word',realm:'cathedral',place:'The Drowned Cathedral',clue:'An unsigned letter is fading beneath the wishing tree.',letter:'If you can read this, the castle has not forgotten us. I hid seven pieces of a promise, one in every place the dark could not understand. Start with the books that survived the fire.',reward:'The first piece of the promise'},
  {title:'Ink beneath the ash',realm:'library',place:'The Ashen Library',clue:'A page survived the fire. The shadows have found it.',letter:'The fire took the shelves, but someone carried every letter outside. Kindness is rarely the loudest thing in a room. Look east: the stars remember the person who saved them.',reward:'The archivist’s testimony'},
@@ -20,7 +21,7 @@ export function restoreNightfall(raw={}){
  const completed=Array.isArray(raw.completed)?[...new Set(raw.completed.filter(n=>Number.isInteger(n)&&n>=0&&n<7))].sort((a,b)=>a-b):[];
  // Story chapters are sequential; ignore any out-of-order saved entries.
  const ordered=[];for(let i=0;i<7&&completed.includes(i);i++)ordered.push(i);
- return{completed:ordered,embers:count(raw.embers),owned:Array.isArray(raw.owned)?[...new Set(raw.owned.filter(id=>FURNITURE.some(f=>f.id===id)))]:[],hidden:Array.isArray(raw.hidden)?raw.hidden.filter(id=>FURNITURE.some(f=>f.id===id)):[],palette:['teal','plum','moss'].includes(raw.palette)?raw.palette:'teal',bestWave:count(raw.bestWave)};
+ return{completed:ordered,embers:count(raw.embers),owned:Array.isArray(raw.owned)?[...new Set(raw.owned.filter(id=>FURNITURE.some(f=>f.id===id)))]:[],hidden:Array.isArray(raw.hidden)?raw.hidden.filter(id=>FURNITURE.some(f=>f.id===id)):[],palette:['teal','plum','moss'].includes(raw.palette)?raw.palette:'teal',bestWave:count(raw.bestWave),runs:count(raw.runs),weapon:weaponFor(raw.weapon).id};
 }
 export function completeNight(state,index){
  if(!Number.isInteger(index)||index<0||index>=7||index>state.completed.length)return 0;

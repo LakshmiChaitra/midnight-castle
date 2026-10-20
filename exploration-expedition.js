@@ -27,7 +27,7 @@ export function createExpedition({scene,player,ui,box,cylinder,stone,paleStone,w
   for(const seal of seals)seal.mesh.visible=state.mode==='hunt'&&!state.seals.includes(seal.id);
  }
  function choose(id){state.traveler=id;actor.remove(rig.root);disposeRig(rig);rig=buildTraveler(id);actor.add(rig.root);save();render();}
- function disposeRig(old){const materials=new Set();old.root.traverse(o=>{if(o.isMesh){o.geometry.dispose();materials.add(o.material);}});materials.forEach(m=>m.dispose());}
+ function disposeRig(old){if(old.dispose){old.dispose();return;}const materials=new Set();old.root.traverse(o=>{if(o.isMesh){o.geometry.dispose();materials.add(o.material);}});materials.forEach(m=>m.dispose());}
  function initPreview(){
   if(previewRenderer)return;
   previewRenderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power'});previewRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));previewRenderer.toneMapping=THREE.ACESFilmicToneMapping;previewRenderer.toneMappingExposure=1.3;previewRenderer.setClearColor(0x0d191f,0);$('traveler-preview').append(previewRenderer.domElement);
@@ -93,7 +93,7 @@ export function createExpedition({scene,player,ui,box,cylinder,stone,paleStone,w
  function update({time,dt,yaw,paused,inside,aiming=false}){
   $('expedition-quest').hidden=false;
   const dx=player.x-previousPosition.x,dz=player.z-previousPosition.z;const speed=paused?0:Math.min(7,Math.hypot(dx,dz)/Math.max(.001,dt));const desired=!aiming&&speed>.12?Math.atan2(-dx,-dz):yaw;const angle=Math.atan2(Math.sin(desired-actorHeading),Math.cos(desired-actorHeading));actorHeading+=angle*(1-Math.exp(-8*dt));previousPosition.copy(player);lastSpeed=THREE.MathUtils.damp(lastSpeed,speed,8,dt);
-  actor.position.copy(player);actor.rotation.y=actorHeading;actor.visible=inside;rig.animate(time,lastSpeed,dt,time<actionUntil);
+  actor.position.copy(player);actor.rotation.y=actorHeading;actor.visible=inside;rig.animate(time,lastSpeed,dt,time<actionUntil,{aiming});
   for(const drawer of drawers){drawer.open=THREE.MathUtils.damp(drawer.open,drawer.target,8,dt);drawer.slider.position.z=drawer.open*.72;drawer.root.userData.drawerOpen=drawer.open.toFixed(2);}
   crest.visible=state.badges.letters||state.badges.hunt;crestStar.position.set(Math.sin(time)*.6,.15,Math.cos(time)*.6);
   mobile.rotation.y=time*.16;globe.position.y=Math.sin(time)*.05;
@@ -106,5 +106,5 @@ export function createExpedition({scene,player,ui,box,cylinder,stone,paleStone,w
  function endDemo(){if(!demoSnapshot)return;const savedDemo=demoSnapshot;Object.assign(state,structuredClone(savedDemo.state));choose(state.traveler);drawers.forEach((d,i)=>{Object.assign(d,savedDemo.drawers[i]);d.slider.position.z=d.open*.72;});demoSnapshot=null;render();}
  function demoMode(id){if(!demoSnapshot)return;state.mode=id;if(id==='hunt'){state.seals=[];state.badges.hunt=false;}render();}
  function demoDrawer(time){const d=drawers.find(d=>d.level>0);if(d){d.target=1;actionUntil=time+1.2;}}
- render();return{beginDemo,resetDemo,endDemo,demoMode,demoDrawer,demoTraveler:id=>{if(demoSnapshot)choose(id);},demoReach:time=>{actionUntil=time+1.2;},state,actor,update,use,onActivity:activity,groundHeight:galleryFloorAt,animateActor:(time,speed,dt,action)=>rig.animate(time,speed,dt,action),collectSeal:(id,time)=>{const target=seals.find(s=>s.id===id);if(target)use(target.mesh,time);},isSealFound:id=>state.seals.includes(id),cameraHeight:()=>['mira','theo'].includes(state.traveler)?2.6:1.9,focusHeight:()=>['mira','theo'].includes(state.traveler)?1.05:.6,setCamera:value=>{state.follow=value;save();},showCharacters:()=>{$('choose-traveler').click();},canInteract:object=>{const seal=seals.find(s=>s.mesh===object);return !seal||(state.mode==='hunt'&&!state.seals.includes(seal.id));}};
+ render();return{dodge:()=>rig.dodge?.(),shoot:()=>rig.shoot?.(),beginDemo,resetDemo,endDemo,demoMode,demoDrawer,demoTraveler:id=>{if(demoSnapshot)choose(id);},demoReach:time=>{actionUntil=time+1.2;},state,actor,update,use,onActivity:activity,groundHeight:galleryFloorAt,animateActor:(time,speed,dt,action)=>rig.animate(time,speed,dt,action),collectSeal:(id,time)=>{const target=seals.find(s=>s.id===id);if(target)use(target.mesh,time);},isSealFound:id=>state.seals.includes(id),cameraHeight:()=>['mira','theo'].includes(state.traveler)?2.6:1.9,focusHeight:()=>['mira','theo'].includes(state.traveler)?1.05:.6,setCamera:value=>{state.follow=value;save();},showCharacters:()=>{$('choose-traveler').click();},canInteract:object=>{const seal=seals.find(s=>s.mesh===object);return !seal||(state.mode==='hunt'&&!state.seals.includes(seal.id));}};
 }

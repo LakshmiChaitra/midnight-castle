@@ -9,9 +9,9 @@ The default `index.html` now opens a freely controlled, modeled 3D world. It no 
 
 These environments share one scene and continuous movement. **Realms & Routes** provides guided walking paths; movement keys interrupt them. WASD moves, arrows walk/turn, dragging turns the camera, Shift sprints, Space jumps, and E interacts with nearby world objects. The camera boom shortens near obstacles. Stair heights are physical floor heights; there is no scripted climb animation in this version. Library stairs rise to Y=4, cathedral stairs to Y=3.6. Approach a cabinet and open individual drawers to read/write letters.
 
-Mira and Theo now use hooded traveler rigs with armor, leather gear and a folded animated cape. Pip, Miso and Ember remain available. The sound button enables a locally synthesized wind/room tone and footsteps; it starts muted. No external audio is fetched.
+Mira and Theo use KayKit CC0 rigged characters with skeletal idle, walking, running, aiming, shooting, interaction, and dodge animations. Models and textures are hosted locally. Pip, Miso and Ember have quadruped rigs, jointed paws, faces, animated ears/tails, and expedition packs. Character loading has a procedural fallback so a failed model download cannot stop the world. The sound button enables a locally synthesized wind/room tone and footsteps; it starts muted. No external audio is fetched.
 
-The existing unique-read/write stardust, mode progress, journal and local rewards are retained. Letters stay on this device. There is no public message service, live leaderboard, paid reward, combat, or multiplayer. This is a procedural browser prototype, not an AAA game or a photorealistic reconstruction.
+The existing unique-read/write stardust, mode progress, journal and local rewards are retained. Letters stay on this device. There is no public message service, live leaderboard, paid reward or multiplayer. Optional Nightfall combat is described below. This is a procedural browser prototype, not an AAA game or a photorealistic reconstruction.
 
 New implementation: `exploration.js`, `exploration-expedition.js`, `realms.js`, `realms.css`, `wanderers.js`, `soundscape.js`. Three.js remains vendored locally under its MIT license. The published entry now loads a checked-in, cache-versioned bundle. Run `npm ci`, `npm run build` and `npm test` after editing source before pushing. esbuild is a development-only dependency; the deployed game needs no runtime package downloads or import-map support. Existing artwork provenance is retained below.
 
@@ -93,7 +93,7 @@ No package installation or build step is required. Google Fonts are optional; lo
 
 An optional campaign launched from the visible Nightfall button or the mode picker. Peaceful exploration and its stardust/rewards are unchanged. About explains both play styles.
 
-- Seven sequential story chapters across the existing modeled realms. Each has three shadow waves, shield and letter integrity, a prism blaster, projectile collisions, eight-shot magazines, and reloads. Click a shadow to aim, or use F/the fire button for assisted aim. WASD/arrows move, drag looks, Space jumps, and R reloads. Leaving returns to the original exploration position.
+- Seven sequential story chapters across the existing modeled realms. Each has three shadow waves, shield and letter integrity, three selectable weapons, projectile collisions, magazines, and reloads. Repeater (8 rounds), scattergun (4 rounds / five short-range pellets), and Comet lance (5 heavy rounds) have distinct timing and damage. Switching weapons requires a reload. Q / Dodge performs a bounded backward evasion with brief invulnerability and a cooldown. Click a shadow to aim, or use F/the fire button for assisted aim. WASD/arrows move, drag looks, Space jumps, and R reloads. Leaving returns to the original exploration position.
 - Read and keep the rescued story page to finish a chapter: 40 embers on first completion, 12 on replays. Completed pages can be reread without another battle or extra payment. Closing a letter never claims its reward.
 - A separate walkable room has three free palettes, five optional decorations, a faster-reloading blaster core, glowing rescued-page frames, and a seven-light completion crest. Unlocking furniture spends embers once; displaying/hiding it is free.
 - Endless Watch unlocks after chapter 3, awards 10 embers per completed wave, and preserves earnings on defeat. It has a local best-wave score, not a shared leaderboard.
@@ -101,3 +101,11 @@ An optional campaign launched from the visible Nightfall button or the mode pick
 - The local save key is `midnight-nightfall-v1`. No public letter backend, accounts, multiplayer, payments or real-world rewards are introduced. Optional synthesized combat sound follows the existing sound preference.
 
 Validation: `npm test` includes progression ordering, purchases, replay rewards, corrupt-save handling and continuous projectile collision checks. Browser playtests cover the seven chapter victories, demo isolation, saved room purchases, and camera controls.
+
+## Travelers and replay variety update
+
+`hero-models.js` loads the locally hosted Mira/Theo GLBs, clones skeletons safely for the preview and game, and crossfades real animations. `assets/characters/README.md` records the official KayKit source and CC0 license. `tools/trim-character-assets.py` losslessly retains the ten used clips from the original assets (original downloads are inputs, not required at runtime). `pet-travelers.js` supplies the animal rigs.
+
+`nightfall-combat.js` defines weapon tuning, varying encounter formations, armor damage, and the bounded shard bonus. Every attempt changes the enemy mix; each third wave includes a Hollow Warden. Wraiths fire at range, rushers telegraph a dash, sentinels absorb damage with breakable armor, and Wardens warn before an area strike and projectile fan. Three optional memory shards in each siege restore shield/ammo; collecting all three earns 15 bonus embers on victory (once per Endless run, on the next completed wave). Chapters remain playable without collecting them. Demo play awards nothing. Preferred loadout and encounter count extend the existing save without removing prior progress.
+
+Keep the GitHub Pages URL for this release: https://lakshmichaitra.github.io/midnight-castle/.

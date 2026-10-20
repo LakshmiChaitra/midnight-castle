@@ -27,3 +27,24 @@ test('fast projectiles hit through a target between rendered frames',()=>{
 });
 
 test('non-finite saved currency and scores do not poison progression',()=>{const s=restoreNightfall({embers:Infinity,bestWave:'NaN'});assert.equal(s.embers,0);assert.equal(s.bestWave,0);});
+
+test('loadout and encounter sequence survive old saves without corrupt values',async()=>{
+ const {weaponFor,enemyKind,enemyStats}=await import('../nightfall-combat.js');
+ assert.equal(restoreNightfall().weapon,'prism');assert.equal(restoreNightfall({weapon:'hack',runs:Infinity}).runs,0);
+ assert.equal(restoreNightfall({weapon:'comet',runs:3}).weapon,'comet');
+ assert.equal(weaponFor('unknown').mag,8);
+ const attempt=n=>Array.from({length:5},(_,i)=>enemyKind(0,1,i,n));
+ assert.notDeepEqual(attempt(0),attempt(1));assert.deepEqual(new Set(attempt(0)),new Set(['wraith','rusher','sentinel']));
+ assert.equal(enemyKind(0,3,0,0),'warden');assert.equal(enemyKind(6,3,0,5),'warden');
+ assert.ok(enemyStats('warden',6).hp>enemyStats('rusher',6).hp);
+});
+test('armor absorbs damage before health and heavy bolts break through',async()=>{
+ const {damageEnemy}=await import('../nightfall-combat.js');
+ const e={hp:4,shield:2};assert.equal(damageEnemy(e,1),false);assert.deepEqual(e,{hp:4,shield:1});
+ assert.equal(damageEnemy(e,4),false);assert.deepEqual(e,{hp:1,shield:0});
+ assert.equal(damageEnemy(e,1),true);assert.equal(e.hp,0);
+});
+test('memory shards give a bounded optional completion bonus',async()=>{
+ const {shardBonus}=await import('../nightfall-combat.js');
+ assert.equal(shardBonus(0),0);assert.equal(shardBonus(2),0);assert.equal(shardBonus(3),15);assert.equal(shardBonus(4),0);
+});
