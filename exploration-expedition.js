@@ -90,9 +90,9 @@ export function createExpedition({scene,player,ui,box,cylinder,stone,paleStone,w
   actionUntil=time+.65;return false;
  }
  function activity(kind,id){if(state.mode!=='letters')return;if(kind==='read'){if(state.readIds.includes(id))return;state.readIds.push(id);state.readIds=state.readIds.slice(-3);}const done=state.read>=3&&state.written>=2;if(kind==='read')state.read=Math.min(3,state.read+1);if(kind==='write')state.written=Math.min(2,state.written+1);if(state.read>=3&&state.written>=2)state.badges.letters=true;save();render();if(!done&&state.read>=3&&state.written>=2)ui.toast('The Keeper’s Crest is yours. Look at the light you left.');}
- function update({time,dt,yaw,paused,inside}){
+ function update({time,dt,yaw,paused,inside,aiming=false}){
   $('expedition-quest').hidden=false;
-  const dx=player.x-previousPosition.x,dz=player.z-previousPosition.z;const speed=paused?0:Math.min(7,Math.hypot(dx,dz)/Math.max(.001,dt));const desired=speed>.12?Math.atan2(-dx,-dz):yaw;const angle=Math.atan2(Math.sin(desired-actorHeading),Math.cos(desired-actorHeading));actorHeading+=angle*(1-Math.exp(-8*dt));previousPosition.copy(player);lastSpeed=THREE.MathUtils.damp(lastSpeed,speed,8,dt);
+  const dx=player.x-previousPosition.x,dz=player.z-previousPosition.z;const speed=paused?0:Math.min(7,Math.hypot(dx,dz)/Math.max(.001,dt));const desired=!aiming&&speed>.12?Math.atan2(-dx,-dz):yaw;const angle=Math.atan2(Math.sin(desired-actorHeading),Math.cos(desired-actorHeading));actorHeading+=angle*(1-Math.exp(-8*dt));previousPosition.copy(player);lastSpeed=THREE.MathUtils.damp(lastSpeed,speed,8,dt);
   actor.position.copy(player);actor.rotation.y=actorHeading;actor.visible=inside;rig.animate(time,lastSpeed,dt,time<actionUntil);
   for(const drawer of drawers){drawer.open=THREE.MathUtils.damp(drawer.open,drawer.target,8,dt);drawer.slider.position.z=drawer.open*.72;drawer.root.userData.drawerOpen=drawer.open.toFixed(2);}
   crest.visible=state.badges.letters||state.badges.hunt;crestStar.position.set(Math.sin(time)*.6,.15,Math.cos(time)*.6);

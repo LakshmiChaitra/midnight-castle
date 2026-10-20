@@ -87,3 +87,17 @@ Generated using the built-in image-generation tool. JPEGs are format-compressed 
 - `assets/archive.jpg`: the earlier generated midnight curiosity shop from this conversation, with a hovering sealed envelope, bottled orchard, firefly matchbox, dream teacup, and brass drawers under a crescent moon window.
 
 No package installation or build step is required. Google Fonts are optional; local serif and sans-serif fallbacks are supplied.
+
+
+## Nightfall Defenders
+
+An optional campaign launched from the visible Nightfall button or the mode picker. Peaceful exploration and its stardust/rewards are unchanged. About explains both play styles.
+
+- Seven sequential story chapters across the existing modeled realms. Each has three shadow waves, shield and letter integrity, a prism blaster, projectile collisions, eight-shot magazines, and reloads. Click a shadow to aim, or use F/the fire button for assisted aim. WASD/arrows move, drag looks, Space jumps, and R reloads. Leaving returns to the original exploration position.
+- Read and keep the rescued story page to finish a chapter: 40 embers on first completion, 12 on replays. Completed pages can be reread without another battle or extra payment. Closing a letter never claims its reward.
+- A separate walkable room has three free palettes, five optional decorations, a faster-reloading blaster core, glowing rescued-page frames, and a seven-light completion crest. Unlocking furniture spends embers once; displaying/hiding it is free.
+- Endless Watch unlocks after chapter 3, awards 10 embers per completed wave, and preserves earnings on defeat. It has a local best-wave score, not a shared leaderboard.
+- Watch Combat Demo runs a computer-controlled siege with movement, firing, reloads and a rescued page. It awards nothing and never changes campaign or room progress. Play This Siege starts a fresh real mission. The original 87-second exploration tutorial remains available.
+- The local save key is `midnight-nightfall-v1`. No public letter backend, accounts, multiplayer, payments or real-world rewards are introduced. Optional synthesized combat sound follows the existing sound preference.
+
+Validation: `npm test` includes progression ordering, purchases, replay rewards, corrupt-save handling and continuous projectile collision checks. Browser playtests cover the seven chapter victories, demo isolation, saved room purchases, and camera controls.
